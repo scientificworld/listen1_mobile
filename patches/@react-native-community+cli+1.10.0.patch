@@ -1,0 +1,98 @@
+diff --git a/node_modules/@react-native-community/cli/build/commands/runIOS/parseXctraceIOSDevicesList.js b/node_modules/@react-native-community/cli/build/commands/runIOS/parseXctraceIOSDevicesList.js
+new file mode 100644
+index 0000000..8ee09e6
+--- /dev/null
++++ b/node_modules/@react-native-community/cli/build/commands/runIOS/parseXctraceIOSDevicesList.js
+@@ -0,0 +1,68 @@
++"use strict";
++
++Object.defineProperty(exports, "__esModule", {
++  value: true
++});
++exports.default = void 0;
++
++/**
++ * Copyright (c) Facebook, Inc. and its affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ *
++ */
++
++/**
++ * Parses the output of the `xcrun instruments -s` command and returns metadata
++ * about available iOS simulators and physical devices, as well as host Mac for
++ * Catalyst purposes.
++ *
++ * Expected text looks roughly like this:
++ *
++ * ```
++ * == Devices ==
++ * this-mac-device [UDID]
++ * A Physical Device (OS Version) (UDID)
++ *
++ * == Simulators ==
++ * A Simulator Device (OS Version) (UDID)
++ * ```
++ */
++function parseIOSDevicesList(text) {
++  const devices = [];
++  let isSimulator = false;
++
++  if (text.indexOf('== Simulators ==') === -1) {
++    return [];
++  }
++
++  text.split('\n').forEach(line => {
++    if (line === '== Simulators ==') {
++      isSimulator = true;
++    }
++
++    const device = line.match(/(.*?) (\(([0-9.]+)\) )?\(([0-9A-F-]+)\)/i);
++
++    if (device) {
++      const [, name,, version, udid] = device;
++      const metadata = {
++        name,
++        udid
++      };
++
++      if (version) {
++        metadata.version = version;
++        metadata.type = isSimulator ? 'simulator' : 'device';
++      } else {
++        metadata.type = 'catalyst';
++      }
++
++      devices.push(metadata);
++    }
++  });
++  return devices;
++}
++
++var _default = parseIOSDevicesList;
++exports.default = _default;
+diff --git a/node_modules/@react-native-community/cli/build/commands/runIOS/runIOS.js b/node_modules/@react-native-community/cli/build/commands/runIOS/runIOS.js
+index d5ef5ad..9934ad1 100644
+--- a/node_modules/@react-native-community/cli/build/commands/runIOS/runIOS.js
++++ b/node_modules/@react-native-community/cli/build/commands/runIOS/runIOS.js
+@@ -39,6 +39,8 @@ var _findXcodeProject = _interopRequireDefault(require("./findXcodeProject"));
+ 
+ var _parseIOSDevicesList = _interopRequireDefault(require("./parseIOSDevicesList"));
+ 
++var _parseXctraceIOSDevicesList = _interopRequireDefault(require("./parseXctraceIOSDevicesList"));
++
+ var _findMatchingSimulator = _interopRequireDefault(require("./findMatchingSimulator"));
+ 
+ var _errors = require("../../tools/errors");
+@@ -69,8 +71,8 @@ function runIOS(_, ctx, args) {
+ 
+   _logger.default.info(`Found Xcode ${xcodeProject.isWorkspace ? 'workspace' : 'project'} ${xcodeProject.name}`);
+ 
+-  const devices = (0, _parseIOSDevicesList.default)( // $FlowExpectedError https://github.com/facebook/flow/issues/5675
+-  _child_process().default.execFileSync('xcrun', ['instruments', '-s'], {
++  const devices = (0, _parseXctraceIOSDevicesList.default)( // $FlowExpectedError https://github.com/facebook/flow/issues/5675
++  _child_process().default.execFileSync('xcrun', ['xctrace', 'list', 'devices'], {
+     encoding: 'utf8'
+   }));
+ 

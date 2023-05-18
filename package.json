@@ -11,13 +11,15 @@
     "link": "react-native link",
     "eslint": "eslint .",
     "test": "jest",
-    "release": "react-native run-android --variant=release"
+    "release": "react-native run-android --variant=release",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-native-community/async-storage": "^1.12.1",
     "@react-native-community/toolbar-android": "^0.1.0-rc.2",
     "deprecated-react-native-listview": "^0.0.5",
     "md5": "^2.2.1",
+    "patch-package": "^7.0.0",
     "query-string": "^6.8.1",
     "react": "16.8.3",
     "react-native": "0.59.9",
